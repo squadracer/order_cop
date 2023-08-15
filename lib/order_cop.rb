@@ -110,7 +110,7 @@ module OrderCop
   end
 
   def self.patch_active_record(app)
-    app.eager_load! if app
+    app&.eager_load!
 
     ActiveRecord::Base.descendants.each do |model|
       model.const_get(:ActiveRecord_Associations_CollectionProxy).class_eval do
@@ -152,7 +152,7 @@ module OrderCop
 
   if defined?(Rails::Railtie)
     class OrderCopRailtie < Rails::Railtie
-      initializer 'ordercop.patch' do |app|
+      initializer "ordercop.patch" do |app|
         return if OrderCop.disabled?
 
         OrderCop.apply(app)

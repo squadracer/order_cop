@@ -3,10 +3,9 @@
 require "active_record"
 class Post < ActiveRecord::Base
 end
-ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ':memory:')
+ActiveRecord::Base.establish_connection(adapter: "sqlite3", database: ":memory:")
 ActiveRecord::Schema.define(version: 1) do
   create_table :posts do |t|
-
   end
 end
 
@@ -15,11 +14,11 @@ require "order_cop"
 module Rails
   class << self
     def root
-      Pathname.new(File.expand_path(__FILE__).split('/')[0..-3].join('/'))
+      Pathname.new(File.expand_path(__FILE__).split("/")[0..-3].join("/"))
     end
 
     def env
-      'test'
+      "test"
     end
   end
 end
@@ -73,4 +72,3 @@ RSpec.describe OrderCop do
     end.not_to raise_error
   end
 end
-
