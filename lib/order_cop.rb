@@ -7,90 +7,94 @@ require "rails"
 require "ostruct"
 require "binding_of_caller"
 
-module OrderCopMixin
-  # patch all methods which iterate over the collection and return several records
-  #  we don't patch `first` and `last`, take or others because they return a single record)
-  #  we don't patch sort because it specifically doesn't need an order
-  #  we don't patch select as it's a query method
-
-  def each(...)
-    detect_missing_order(:each) if order_values.empty?
-    super(...)
-  end
-
-  def to_a
-    detect_missing_order(:to_a) if order_values.empty?
-    super
-  end
-
-  def map(...)
-    detect_missing_order(:map) if order_values.empty?
-    super(...)
-  end
-
-  def find_each(...)
-    detect_missing_order(:find_each) if order_values.empty?
-    super(...)
-  end
-
-  def find_in_batches(...)
-    detect_missing_order(:find_in_batches) if order_values.empty?
-    super(...)
-  end
-
-  def reject(...)
-    detect_missing_order(:reject) if order_values.empty?
-    super(...)
-  end
-
-  def reject!(&block)
-    detect_missing_order(:reject!) if order_values.empty?
-    super(&block)
-  end
-
-  private
-
-  def detect_missing_order(method)
-    return if OrderCop.disabled?
-    level = 1.upto(binding.frame_count).find do |i|
-      lbinding = binding.of_caller(i)
-      lmethod = lbinding.eval("__method__")
-      next if lmethod.nil?
-      if OrderCop::WHITELIST.include?(lmethod)
-        puts "whitelisted #{lmethod}"
-        return nil
-      end
-      location = lbinding.source_location[0]
-      location.include?(Rails.root.to_s) && !location.include?(Rails.root.join("config").to_s)
-    end
-
-    if level
-      location = binding.of_caller(level - 1).source_location
-      file_path = location.first.gsub(Rails.root.to_s, "")
-      line_number = location.last
-      msg = "Missing Order for :#{method} at #{file_path}:#{line_number}"
-    else
-      msg = "Missing Order for :#{method}"
-    end
-
-    if OrderCop.rails_logger?
-      Rails.logger.error order_cop_red("Missing order for #{method}")
-      caller.each do |line|
-        Rails.logger.error order_cop_red("  #{line}") if line.include?(Rails.root.to_s)
-      end
-    end
-    if OrderCop.raise?
-      raise OrderCop::Error.new(msg)
-    end
-  end
-
-  def order_cop_red(msg)
-    ActiveSupport::LogSubscriber.new.send(:color, msg, :red)
-  end
-end
-
+require "zeitwerk"
+loader = Zeitwerk::Loader.for_gem
+loader.setup
 module OrderCop
+  module OrderCopMixin
+    # patch all methods which iterate over the collection and return several records
+    #  we don't patch `first` and `last`, take or others because they return a single record)
+    #  we don't patch sort because it specifically doesn't need an order
+    #  we don't patch select as it's a query method
+
+    def each(...)
+      detect_missing_order(:each) if order_values.empty?
+      super(...)
+    end
+
+    def to_a
+      detect_missing_order(:to_a) if order_values.empty?
+      super
+    end
+
+    def map(...)
+      detect_missing_order(:map) if order_values.empty?
+      super(...)
+    end
+
+    def find_each(...)
+      detect_missing_order(:find_each) if order_values.empty?
+      super(...)
+    end
+
+    def find_in_batches(...)
+      detect_missing_order(:find_in_batches) if order_values.empty?
+      super(...)
+    end
+
+    def reject(...)
+      detect_missing_order(:reject) if order_values.empty?
+      super(...)
+    end
+
+    def reject!(&block)
+      detect_missing_order(:reject!) if order_values.empty?
+      super(&block)
+    end
+
+    private
+
+    def detect_missing_order(method)
+      return if OrderCop.disabled?
+      level = 1.upto(binding.frame_count).find do |i|
+        lbinding = binding.of_caller(i)
+        lmethod = lbinding.eval("__method__")
+        next if lmethod.nil?
+        if OrderCop::WHITELIST.include?(lmethod)
+          puts "whitelisted #{lmethod}"
+          return nil
+        end
+        location = lbinding.source_location[0]
+        location.include?(Rails.root.to_s) && !location.include?(Rails.root.join("config").to_s)
+      end
+
+      if level
+        location = binding.of_caller(level - 1).source_location
+        file_path = location.first.gsub(Rails.root.to_s, "")
+        line_number = location.last
+        msg = "Missing Order for :#{method} at #{file_path}:#{line_number}"
+      else
+        msg = "Missing Order for :#{method}"
+      end
+
+      if OrderCop.rails_logger?
+        Rails.logger.error order_cop_red("Missing order for #{method}")
+        caller.each do |line|
+          Rails.logger.error order_cop_red("  #{line}") if line.include?(Rails.root.to_s)
+        end
+      end
+      if OrderCop.raise?
+        raise OrderCop::Error.new(msg)
+      end
+    end
+
+    def order_cop_red(msg)
+      ActiveSupport::LogSubscriber.new.send(:color, msg, :red)
+    end
+  end
+
   class Error < StandardError; end
+
   WHITELIST = %i[sum any? none? inspect method_missing not load_target reindex attachment attachments attributes_table with_current_arbre_element].freeze
 
   def self.disable(&block)
@@ -110,8 +114,6 @@ module OrderCop
   end
 
   def self.patch_active_record(app)
-    app&.eager_load!
-
     ActiveRecord::Base.descendants.each do |model|
       model.const_get(:ActiveRecord_Associations_CollectionProxy).class_eval do
         prepend OrderCopMixin
@@ -155,13 +157,9 @@ module OrderCop
       initializer "ordercop.patch" do |app|
         return if OrderCop.disabled?
 
-        OrderCop.apply(app)
-
-        ActiveSupport::Reloader.to_prepare do
-          OrderCop.apply(app)
-        end
-
         app.config.to_prepare do
+          app&.eager_load!
+
           OrderCop.apply(app)
         end
       end
@@ -169,4 +167,7 @@ module OrderCop
   end
 end
 
+ActiveSupport::Reloader.to_prepare do
+  OrderCop.apply(Rails.application)
+end
 # OrderCop.setup(rails_logger: true) unless Rails.env.production?

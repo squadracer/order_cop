@@ -1,14 +1,5 @@
 # frozen_string_literal: true
 
-require "active_record"
-class Post < ActiveRecord::Base
-end
-ActiveRecord::Base.establish_connection(adapter: "sqlite3", database: ":memory:")
-ActiveRecord::Schema.define(version: 1) do
-  create_table :posts do |t|
-  end
-end
-
 require "order_cop"
 
 module Rails
@@ -69,6 +60,19 @@ RSpec.describe OrderCop do
     OrderCop.apply
     expect do
       Post.order(:id).to_a
+    end.not_to raise_error
+  end
+  it "raise if post.comments are not ordered" do
+    OrderCop.apply
+    expect(OrderCop.raise?).to eq(true)
+    expect do
+      Post.new.comments.to_a
+    end.to raise_error(OrderCop::Error)
+  end
+  it "doesn't raise if post.comments are ordered" do
+    OrderCop.apply
+    expect do
+      Post.new.comments.order(:id).to_a
     end.not_to raise_error
   end
 end
