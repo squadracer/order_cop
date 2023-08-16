@@ -61,7 +61,6 @@ module OrderCop
         lmethod = lbinding.eval("__method__")
         next if lmethod.nil?
         if OrderCop::WHITELIST.include?(lmethod)
-          puts "whitelisted #{lmethod}"
           return nil
         end
         location = lbinding.source_location[0]
