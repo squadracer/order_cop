@@ -44,11 +44,13 @@ RSpec.describe OrderCop do
     OrderCop.setup(enabled: true)
     expect(OrderCop.config.enabled).to eq(true)
   end
+
   it "doesn't raise before apply" do
     expect do
       Post.all.to_a
     end.not_to raise_error
   end
+
   it "raise if Post are not ordered" do
     OrderCop.apply
     expect(OrderCop.raise?).to eq(true)
@@ -56,12 +58,14 @@ RSpec.describe OrderCop do
       Post.all.to_a
     end.to raise_error(OrderCop::Error)
   end
+
   it "doesn't raise if Post are ordered" do
     OrderCop.apply
     expect do
       Post.order(:id).to_a
     end.not_to raise_error
   end
+
   it "raise if post.comments are not ordered" do
     OrderCop.apply
     expect(OrderCop.raise?).to eq(true)
@@ -69,10 +73,18 @@ RSpec.describe OrderCop do
       Post.new.comments.to_a
     end.to raise_error(OrderCop::Error)
   end
+
   it "doesn't raise if post.comments are ordered" do
     OrderCop.apply
     expect do
       Post.new.comments.order(:id).to_a
+    end.not_to raise_error
+  end
+
+  it "whitelist reindex" do
+    OrderCop.apply
+    expect do
+      Post.reindex
     end.not_to raise_error
   end
 end

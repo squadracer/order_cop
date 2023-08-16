@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    order_cop (0.1.1)
+    order_cop (0.1.2)
       binding_of_caller (~> 1.0)
       rails (~> 7.0)
 

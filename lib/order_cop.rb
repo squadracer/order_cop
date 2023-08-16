@@ -54,15 +54,29 @@ module OrderCop
 
     private
 
-    def detect_missing_order(method)
-      return if OrderCop.disabled?
-      level = 1.upto(binding.frame_count).find do |i|
+    def stack_is_whitelisted?
+      1.upto(binding.frame_count).each do |i|
         lbinding = binding.of_caller(i)
         lmethod = lbinding.eval("__method__")
         next if lmethod.nil?
+        puts "lmethod: #{lmethod}" if OrderCop.debug?
         if OrderCop::WHITELIST.include?(lmethod)
-          return nil
+          puts "#{lmethod} is whitelisted, ignoring" if OrderCop.debug?
+          return true
         end
+      end
+      false
+    end
+
+    def detect_missing_order(method)
+      return if OrderCop.disabled?
+      puts "missing order, detect if allowed" if OrderCop.debug?
+      puts "stack size: #{binding.frame_count}" if OrderCop.debug?
+
+      return if stack_is_whitelisted?
+
+      level = 1.upto(binding.frame_count).find do |i|
+        lbinding = binding.of_caller(i)
         location = lbinding.source_location[0]
         location.include?(Rails.root.to_s) && !location.include?(Rails.root.join("config").to_s)
       end
@@ -134,8 +148,12 @@ module OrderCop
     config.raise
   end
 
+  def self.debug?
+    config.debug
+  end
+
   def self.config(**options)
-    @config ||= OpenStruct.new(rails_logger: false, raise: true, enabled: true)
+    @config ||= OpenStruct.new(rails_logger: false, raise: true, enabled: true, debug: false)
     options.each do |k, v|
       @config[k] = v
     end
@@ -169,4 +187,3 @@ end
 ActiveSupport::Reloader.to_prepare do
   OrderCop.apply(Rails.application)
 end
-# OrderCop.setup(rails_logger: true) unless Rails.env.production?

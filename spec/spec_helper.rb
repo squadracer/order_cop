@@ -20,6 +20,9 @@ ActiveRecord::Migration.verbose = false
 
 class Post < ActiveRecord::Base
   has_many :comments
+  def self.reindex
+    all.to_a
+  end
 end
 
 class Comment < ActiveRecord::Base
