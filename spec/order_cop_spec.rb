@@ -16,8 +16,9 @@ end
 
 RSpec.describe OrderCop do
   before(:each) do
-    OrderCop.config(raise: true, enabled: true)
+    OrderCop.instance_variable_set(:@config, nil)
   end
+
   it "has a version number" do
     expect(OrderCop::VERSION).not_to be nil
   end
@@ -37,6 +38,7 @@ RSpec.describe OrderCop do
   end
 
   it "is enabled before config" do
+    expect(OrderCop.disabled?).to eq(false)
     expect(OrderCop.config.enabled).to eq(true)
   end
 
@@ -49,6 +51,7 @@ RSpec.describe OrderCop do
     OrderCop.config do |config|
       config.enabled = true
     end
+    expect(OrderCop.config.enabled).to eq(true)
   end
 
   it "doesn't raise before apply" do
@@ -59,7 +62,6 @@ RSpec.describe OrderCop do
 
   it "raise if Post are not ordered" do
     OrderCop.apply
-    expect(OrderCop.config.raise).to eq(true)
     expect do
       Post.all.to_a
     end.to raise_error(OrderCop::Error)

@@ -40,11 +40,11 @@ module OrderCop
   end
 
   def self.disabled?
-    !@config.enabled
+    !config.enabled
   end
 
   def self.enabled?
-    @config.enabled
+    config.enabled
   end
 
   module OrderCopMixin
