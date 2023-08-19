@@ -11,6 +11,42 @@ require "zeitwerk"
 loader = Zeitwerk::Loader.for_gem
 loader.setup
 module OrderCop
+  class OrderCopConfig
+    def initialize
+      @enabled = true
+      @raise = true
+      @debug = false
+      @rails_logger = false
+      @whitelist_methods = %i[sum any? none? inspect method_missing not load_target reindex attachment attachments attributes_table with_current_arbre_element]
+    end
+    attr_accessor :enabled, :raise, :debug, :rails_logger, :whitelist_methods
+  end
+
+  def self.config(**options, &block)
+    @config ||= OrderCopConfig.new
+    options.each do |key, value|
+      @config.send("#{key}=", value)
+    end
+    yield @config if block
+    @config
+  end
+
+  def self.disable(&block)
+    old_enabled = @config.enabled
+    @config.enabled = false
+    yield
+  ensure
+    @config.enabled = old_enabled
+  end
+
+  def self.disabled?
+    !@config.enabled
+  end
+
+  def self.enabled?
+    @config.enabled
+  end
+
   module OrderCopMixin
     # patch all methods which iterate over the collection and return several records
     #  we don't patch `first` and `last`, take or others because they return a single record)
@@ -59,9 +95,9 @@ module OrderCop
         lbinding = binding.of_caller(i)
         lmethod = lbinding.eval("__method__")
         next if lmethod.nil?
-        puts "lmethod: #{lmethod}" if OrderCop.debug?
-        if OrderCop::WHITELIST.include?(lmethod)
-          puts "#{lmethod} is whitelisted, ignoring" if OrderCop.debug?
+        puts "lmethod: #{lmethod}" if OrderCop.config.debug
+        if OrderCop.config.whitelist_methods.include?(lmethod)
+          puts "#{lmethod} is whitelisted, ignoring" if OrderCop.config.debug
           return true
         end
       end
@@ -70,8 +106,8 @@ module OrderCop
 
     def detect_missing_order(method)
       return if OrderCop.disabled?
-      puts "missing order, detect if allowed" if OrderCop.debug?
-      puts "stack size: #{binding.frame_count}" if OrderCop.debug?
+      puts "missing order, detect if allowed" if OrderCop.config.debug
+      puts "stack size: #{binding.frame_count}" if OrderCop.config.debug
 
       return if stack_is_whitelisted?
 
@@ -90,41 +126,21 @@ module OrderCop
         msg = "Missing Order for :#{method}"
       end
 
-      if OrderCop.rails_logger?
-        Rails.logger.error order_cop_red("Missing order for #{method}")
+      red = ->(msg) { ActiveSupport::LogSubscriber.new.send(:color, msg, :red) }
+
+      if OrderCop.config.rails_logger
+        Rails.logger.error red.call(msg)
         caller.each do |line|
-          Rails.logger.error order_cop_red("  #{line}") if line.include?(Rails.root.to_s)
+          Rails.logger.error red.call("  #{line}") if line.include?(Rails.root.to_s)
         end
       end
-      if OrderCop.raise?
+      if OrderCop.config.raise
         raise OrderCop::Error.new(msg)
       end
-    end
-
-    def order_cop_red(msg)
-      ActiveSupport::LogSubscriber.new.send(:color, msg, :red)
     end
   end
 
   class Error < StandardError; end
-
-  WHITELIST = %i[sum any? none? inspect method_missing not load_target reindex attachment attachments attributes_table with_current_arbre_element].freeze
-
-  def self.disable(&block)
-    old_enabled = @enabled
-    @enabled = false
-    yield
-  ensure
-    @enabled = old_enabled
-  end
-
-  def self.disabled?
-    @enabled == false
-  end
-
-  def self.enabled?
-    @enabled != false
-  end
 
   def self.patch_active_record(app)
     ActiveRecord::Base.descendants.each do |model|
@@ -138,31 +154,6 @@ module OrderCop
         prepend OrderCopMixin
       end
     end
-  end
-
-  def self.rails_logger?
-    config.rails_logger
-  end
-
-  def self.raise?
-    config.raise
-  end
-
-  def self.debug?
-    config.debug
-  end
-
-  def self.config(**options)
-    @config ||= OpenStruct.new(rails_logger: false, raise: true, enabled: true, debug: false)
-    options.each do |k, v|
-      @config[k] = v
-    end
-    @enabled = @config.enabled
-    @config
-  end
-
-  def self.setup(**options)
-    config(**options)
   end
 
   def self.apply(app = Rails.application)

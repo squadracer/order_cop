@@ -16,7 +16,7 @@ end
 
 RSpec.describe OrderCop do
   before(:each) do
-    OrderCop.setup(raise: true, enabled: true)
+    OrderCop.config(raise: true, enabled: true)
   end
   it "has a version number" do
     expect(OrderCop::VERSION).not_to be nil
@@ -31,18 +31,24 @@ RSpec.describe OrderCop do
   end
 
   it "doesn't raise when configured" do
-    OrderCop.setup(raise: false)
+    OrderCop.config(raise: false)
 
     expect(OrderCop.config.raise).to eq(false)
   end
 
-  it "is enabled before setup" do
+  it "is enabled before config" do
     expect(OrderCop.config.enabled).to eq(true)
   end
 
-  it "is enabled after setup" do
-    OrderCop.setup(enabled: true)
+  it "is enabled after config" do
+    OrderCop.config(enabled: true)
     expect(OrderCop.config.enabled).to eq(true)
+  end
+
+  it "is enabled after block config" do
+    OrderCop.config do |config|
+      config.enabled = true
+    end
   end
 
   it "doesn't raise before apply" do
@@ -53,7 +59,7 @@ RSpec.describe OrderCop do
 
   it "raise if Post are not ordered" do
     OrderCop.apply
-    expect(OrderCop.raise?).to eq(true)
+    expect(OrderCop.config.raise).to eq(true)
     expect do
       Post.all.to_a
     end.to raise_error(OrderCop::Error)
@@ -68,7 +74,7 @@ RSpec.describe OrderCop do
 
   it "raise if post.comments are not ordered" do
     OrderCop.apply
-    expect(OrderCop.raise?).to eq(true)
+    expect(OrderCop.config.raise).to eq(true)
     expect do
       Post.new.comments.to_a
     end.to raise_error(OrderCop::Error)
