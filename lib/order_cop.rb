@@ -10,6 +10,7 @@ require "binding_of_caller"
 require "zeitwerk"
 loader = Zeitwerk::Loader.for_gem
 loader.setup
+
 module OrderCop
   class OrderCopConfig
     def initialize
@@ -18,8 +19,17 @@ module OrderCop
       @debug = false
       @rails_logger = false
       @whitelist_methods = %i[sum any? none? inspect method_missing not load_target reindex attachment attachments attributes_table with_current_arbre_element]
+      @only_view = false
+      @view_paths = [
+        /app\/views/,
+        /app\/helpers/,
+        /\.erb/,
+        /\.haml/,
+        /\.slim/,
+        /\(erb\)/
+      ].freeze
     end
-    attr_accessor :enabled, :raise, :debug, :rails_logger, :whitelist_methods
+    attr_accessor :enabled, :raise, :debug, :rails_logger, :whitelist_methods, :only_view, :view_paths
   end
 
   def self.config(**options, &block)
@@ -104,12 +114,26 @@ module OrderCop
       false
     end
 
+    def stack_in_view?
+      1.upto(binding.frame_count).each do |i|
+        lbinding = binding.of_caller(i)
+        location = lbinding.source_location[0]
+        puts "location: #{location}" if OrderCop.config.debug
+        if OrderCop.config.view_paths.any? { location.match(_1) }
+          puts "#{location} is in view" if OrderCop.config.debug
+          return true
+        end
+      end
+      false
+    end
+
     def detect_missing_order(method)
       return if OrderCop.disabled?
       puts "missing order, detect if allowed" if OrderCop.config.debug
       puts "stack size: #{binding.frame_count}" if OrderCop.config.debug
 
       return if stack_is_whitelisted?
+      return if OrderCop.config.only_view && !stack_in_view?
 
       level = 1.upto(binding.frame_count).find do |i|
         lbinding = binding.of_caller(i)
@@ -161,6 +185,8 @@ module OrderCop
   end
 
   if defined?(Rails::Railtie)
+    require_relative "order_cop/install_generator"
+
     class OrderCopRailtie < Rails::Railtie
       initializer "ordercop.patch" do |app|
         return if OrderCop.disabled?

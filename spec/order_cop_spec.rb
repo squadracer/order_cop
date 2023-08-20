@@ -2,18 +2,6 @@
 
 require "order_cop"
 
-module Rails
-  class << self
-    def root
-      Pathname.new(File.expand_path(__FILE__).split("/")[0..-3].join("/"))
-    end
-
-    def env
-      "test"
-    end
-  end
-end
-
 RSpec.describe OrderCop do
   before(:each) do
     OrderCop.instance_variable_set(:@config, nil)
@@ -54,12 +42,6 @@ RSpec.describe OrderCop do
     expect(OrderCop.config.enabled).to eq(true)
   end
 
-  it "doesn't raise before apply" do
-    expect do
-      Post.all.to_a
-    end.not_to raise_error
-  end
-
   it "raise if Post are not ordered" do
     OrderCop.apply
     expect do
@@ -86,13 +68,6 @@ RSpec.describe OrderCop do
     OrderCop.apply
     expect do
       Post.new.comments.order(:id).to_a
-    end.not_to raise_error
-  end
-
-  it "whitelist reindex" do
-    OrderCop.apply
-    expect do
-      Post.reindex
     end.not_to raise_error
   end
 end

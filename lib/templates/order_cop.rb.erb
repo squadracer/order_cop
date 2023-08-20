@@ -1,0 +1,21 @@
+if defined?(OrderCop)
+  OrderCop.config do |config|
+    # Enable or disable OrderCop (defaults to true)
+    # config.enabled = true
+
+    # Raise an error when a query is not ordered (defaults to true)
+    # config.raise = true
+
+    # Log missing order queries to Rails.logger (defaults to false)
+    # config.rails_logger = false
+
+    # Only raise if the query is in a view (defaults to false)
+    # config.only_view = false
+
+    # Whitelist methods that don't need to be ordered (defaults to <%= OrderCop.config.whitelist_methods %>)
+    # config.whitelist_methods = []
+
+    # Whitelist views that don't need to be ordered (defaults to <%= OrderCop.config.view_paths %>)
+    # config.view_paths = []
+  end
+end

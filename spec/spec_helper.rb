@@ -1,6 +1,27 @@
 # frozen_string_literal: true
 
+require "simplecov"
+
+SimpleCov.start do
+end
+
 require "order_cop"
+
+module Rails
+  class << self
+    def root
+      Pathname.new(File.expand_path(__FILE__).split("/")[0..-3].join("/"))
+    end
+
+    def env
+      "test"
+    end
+  end
+end
+
+SimpleCov.configure do
+  load_profile "test_frameworks"
+end
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
