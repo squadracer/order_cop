@@ -41,14 +41,6 @@ module OrderCop
     @config
   end
 
-  def self.disable(&block)
-    old_enabled = @config.enabled
-    @config.enabled = false
-    yield
-  ensure
-    @config.enabled = old_enabled
-  end
-
   def self.disabled?
     !config.enabled
   end
@@ -91,11 +83,6 @@ module OrderCop
     def reject(...)
       detect_missing_order(:reject) if order_values.empty?
       super(...)
-    end
-
-    def reject!(&block)
-      detect_missing_order(:reject!) if order_values.empty?
-      super(&block)
     end
 
     private

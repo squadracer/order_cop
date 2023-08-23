@@ -16,11 +16,25 @@ module Rails
     def env
       "test"
     end
+
+    def logger
+      @logger ||= Logger.new("/dev/null")
+    end
   end
 end
 
 SimpleCov.configure do
   load_profile "test_frameworks"
+
+  if ENV["COVERAGE_CHANGE"]
+    puts "Will group coverage by changed files"
+    changed_files = `git diff --name-only origin/main`.split("\n")
+    add_group "Changed" do |source_file|
+      changed_files.detect do |filename|
+        source_file.filename.ends_with?(filename)
+      end
+    end
+  end
 end
 
 RSpec.configure do |config|

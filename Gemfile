@@ -16,3 +16,7 @@ gem "rails", "~> 7.0.0"
 gem "sqlite3"
 
 gem "simplecov"
+
+gem "solargraph"
+gem "solargraph-rails"
+gem "solargraph-standardrb"

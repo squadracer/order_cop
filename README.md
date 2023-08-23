@@ -1,34 +1,74 @@
 # OrderCop
 
-TODO: Delete this and the text below, and describe your gem
+order_cop is a gem to help developpers add order on their database query when they iterate on the list.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/order_cop`. To experiment with that code, run `bin/console` for an interactive prompt.
+## Why
+
+When you iterate on a list, you may want to add an order on the list to be sure that the list is always ordered the same way.
+
+Most of the time if you iterate in a view you will add an order on the query, but if you iterate in a controller or in a service you may not want to add the order. The gem help you with the config option :only_view.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+```bash
 
-Install the gem and add to the application's Gemfile by executing:
+bundle add order_cop --group test,development
 
-    $ bundle add UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+## Configuration
 
-    $ gem install UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+```bash
+
+rails g order_cop:install
+
+```
+
+This will generate a file in config/initializers/order_cop.rb
+
+```ruby
+if defined?(OrderCop)
+  OrderCop.config do |config|
+    # Enable or disable OrderCop (defaults to true)
+    # config.enabled = true
+
+    # Raise an error when a query is not ordered (defaults to true)
+    # config.raise = true
+
+    # Log missing order queries to Rails.logger (defaults to false)
+    # config.rails_logger = false
+
+    # Only raise if the query is in a view (defaults to false)
+    # config.only_view = false
+
+    # Whitelist methods that don't need to be ordered (defaults to <%= OrderCop.config.whitelist_methods %>)
+    # config.whitelist_methods = []
+
+    # Whitelist views that don't need to be ordered (defaults to <%= OrderCop.config.view_paths %>)
+    # config.view_paths = []
+  end
+end
+```
+
 
 ## Usage
 
-TODO: Write usage instructions here
+Mainly you want to run your test suite, it will raise on each missing order
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```bash
+git clone git@github.com:squadrace/order_cop.git
+cd order_cop
+bundle install
+rake spec
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+If test pass, you are good to go.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/order_cop.
+Bug reports and pull requests are welcome on GitHub at https://github.com/squadracer/order_cop.
 
 ## License
 

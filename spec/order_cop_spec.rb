@@ -49,6 +49,22 @@ RSpec.describe OrderCop do
     end.to raise_error(OrderCop::Error)
   end
 
+  [:each, :map, :find_each, :find_in_batches, :reject].each do |method|
+    it "doesn't raise if Post are ordered with #{method}" do
+      OrderCop.apply
+      expect do
+        Post.order(:id).send(method) { |post| post }.to_a
+      end.to_not raise_error
+    end
+
+    it "raise if Post are not ordered with #{method}" do
+      OrderCop.apply
+      expect do
+        Post.all.send(method) { |post| post }.to_a
+      end.to raise_error(OrderCop::Error)
+    end
+  end
+
   it "doesn't raise if Post are ordered" do
     OrderCop.apply
     expect do

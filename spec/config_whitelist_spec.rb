@@ -2,7 +2,7 @@
 
 require "order_cop"
 
-RSpec.describe "config.only_view" do
+RSpec.describe "config.whitelist" do
   before(:each) do
     OrderCop.instance_variable_set(:@config, nil)
   end
