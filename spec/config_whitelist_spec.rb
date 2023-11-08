@@ -13,4 +13,10 @@ RSpec.describe "config.whitelist" do
       Post.reindex
     end.not_to raise_error
   end
+  it "whitelist a new method" do
+    OrderCop.config do |config|
+      config.whitelist_methods = [:foobar]
+    end
+    expect(OrderCop.config.whitelist_methods).to eq([:foobar])
+  end
 end
