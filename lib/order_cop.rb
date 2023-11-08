@@ -142,7 +142,7 @@ module OrderCop
       if OrderCop.config.rails_logger
         Rails.logger.error red.call(msg)
         caller.each do |line|
-          Rails.logger.error red.call("  #{line}") if line.include?(Rails.root.to_s)
+          Rails.logger.error red.call("  #{line}") if line.include?(Rails.root.to_s) && !line.include?((Rails.root + "vendor").to_s)
         end
       end
       if OrderCop.config.raise
