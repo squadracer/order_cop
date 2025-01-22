@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = "order_cop"
   spec.version = OrderCop::VERSION
   spec.authors = ["Gauthier Monserand"]
-  spec.email = ["gauthier@squadracer.com"]
+  spec.email = ["gauthier+ordercop@squadracer.com"]
 
   spec.summary = "Bullet-like gem to detect missing order clauses"
   spec.description = "Bullet-like gem to detect missing order clauses"
